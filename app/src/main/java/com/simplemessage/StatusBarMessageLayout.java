@@ -314,7 +314,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 		messageTextView = findViewById(R.id.text);
 		progressBar = findViewById(R.id.progress);
-		
+
 		if (messageRecord != null) {
 			int backgroundColor = messageRecord.getBackgroundColor();
 			if (backgroundColor != 0) {
@@ -328,7 +328,12 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 			int textColor = messageRecord.getTextColor();
 			messageTextView.setTextColor(textColor);
-			progressBar.getIndeterminateDrawable().setColorFilter(textColor, PorterDuff.Mode.SRC_IN);
+
+			boolean progress = messageRecord.getProgress();
+			Util.setVisibility(progressBar, progress);
+			if (progress) {
+				progressBar.getIndeterminateDrawable().setColorFilter(textColor, PorterDuff.Mode.SRC_IN);
+			}
 		}
 	}
 

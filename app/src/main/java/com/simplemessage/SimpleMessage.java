@@ -40,7 +40,11 @@ public final class SimpleMessage {
 
 	@NonNull
 	public static SimpleMessage create(@NonNull Activity activity, @NonNull String message, @NonNull MessageType messageType) {
-		return new SimpleMessage(activity, new MessageRecord(message, messageType.getTextColor(), messageType.getBackgroundColor()));
+		return new SimpleMessage(activity,
+		                         new MessageRecord(message,
+		                                           messageType.getTextColor(),
+		                                           messageType.getBackgroundColor(),
+		                                           messageType.isProgress()));
 	}
 
 	private void observeLifecycle() {
