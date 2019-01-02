@@ -35,7 +35,12 @@ public final class SimpleMessage {
 
 	@NonNull
 	public static SimpleMessage create(@NonNull Activity activity, @NonNull String message) {
-		return new SimpleMessage(activity, new MessageRecord(message, 0xFFFFFFFF, 0xFF009000));
+		return create(activity, message, MessageType.NORMAL);
+	}
+
+	@NonNull
+	public static SimpleMessage create(@NonNull Activity activity, @NonNull String message, @NonNull MessageType messageType) {
+		return new SimpleMessage(activity, new MessageRecord(message, messageType.getTextColor(), messageType.getBackgroundColor()));
 	}
 
 	private void observeLifecycle() {

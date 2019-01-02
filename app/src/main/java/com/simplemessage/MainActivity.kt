@@ -13,5 +13,9 @@ class MainActivity : AppCompatActivity() {
 		showMessageButton.setOnClickListener {
 			SimpleMessage.create(this, "Test!!!").show()
 		}
+
+		showMessageButton2.setOnClickListener {
+			SimpleMessage.create(this, "Test!!!", MessageType.SUCCESS).show()
+		}
 	}
 }

@@ -68,20 +68,17 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 	public StatusBarMessageLayout(@NonNull Context context) {
 		super(context);
-		messageRecord = null;
-		init();
+		throw new UnsupportedOperationException();
 	}
 
 	public StatusBarMessageLayout(@NonNull Context context, @Nullable AttributeSet attrs) {
 		super(context, attrs);
-		messageRecord = null;
-		init();
+		throw new UnsupportedOperationException();
 	}
 
 	public StatusBarMessageLayout(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-		messageRecord = null;
-		init();
+		throw new UnsupportedOperationException();
 	}
 
 	public StatusBarMessageLayout(@NonNull Context context, @NonNull MessageRecord messageRecord) {
@@ -100,19 +97,6 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		Log.d(TAG, "hideView() called with: arg1 = [" + arg1 + "]");
 
 		animateViewOut();
-
-		if (statusBarColorOriginalSaved) {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				Window window = getWindow();
-				window.setStatusBarColor(statusBarColorOriginal);
-			}
-			statusBarColorOriginalSaved = false;
-		}
-		if (systemUiVisibilitySaved) {
-			View decorView = getDecorView();
-			decorView.setSystemUiVisibility(systemUiVisibility);
-			systemUiVisibilitySaved = false;
-		}
 	}
 
 	@NonNull
@@ -128,30 +112,29 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	private void showView() {
 		Log.d(TAG, "showView() called");
 
-		Activity activity = (Activity) getContext();
-		ViewGroup viewById = activity.findViewById(android.R.id.content);
+		ViewGroup target = ((ViewGroup) getDecorView());
 
 		ViewParent parent = getParent();
 		if (parent == null) {
 			FrameLayout.LayoutParams layoutParams =
 					new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, getStatusBarHeightInPixels());
 
-			viewById.addView(this, layoutParams);
+			target.addView(this, layoutParams);
 		}
 
 		if (ViewCompat.isLaidOut(this)) {
-			if (this.shouldAnimate()) {
-				this.animateViewIn();
+			if (shouldAnimate()) {
+				animateViewIn();
 			} else {
-				this.onViewShown();
+				onViewShown();
 			}
 		} else {
-			this.setOnLayoutChangeListener((view, left, top, right, bottom) -> {
-				StatusBarMessageLayout.this.setOnLayoutChangeListener(null);
-				if (StatusBarMessageLayout.this.shouldAnimate()) {
-					StatusBarMessageLayout.this.animateViewIn();
+			setOnLayoutChangeListener((view, left, top, right, bottom) -> {
+				setOnLayoutChangeListener(null);
+				if (shouldAnimate()) {
+					animateViewIn();
 				} else {
-					StatusBarMessageLayout.this.onViewShown();
+					onViewShown();
 				}
 			});
 		}
@@ -168,18 +151,8 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			this.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
 		});
 
-		//hasOriginalStatusBarTranslucent = isTranslucentStatusBar()
+		//		hasOriginalStatusBarTranslucent = isTranslucentStatusBar()
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			Window window = getWindow();
-
-			//			window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-			//			if (!statusBarColorOriginalSaved) {
-			//				statusBarColorOriginal = window.getStatusBarColor();
-			//				statusBarColorOriginalSaved = true;
-			//			}
-			//			window.setStatusBarColor(Color.TRANSPARENT);
-		}
 
 	}
 
@@ -200,13 +173,10 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		}
 	}
 
-	private void onViewShown() {
-	}
-
 	private void animateViewIn() {
 		final int translationYBottom = -getTranslationYBottom();
 
-		ViewCompat.offsetTopAndBottom(this, translationYBottom);
+		setTranslationY((float) translationYBottom);
 
 		ValueAnimator animator = new ValueAnimator();
 		animator.setIntValues(translationYBottom, 0);
@@ -214,29 +184,16 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		animator.setDuration(250L);
 		animator.addListener(new AnimatorListenerAdapter() {
 			public void onAnimationStart(Animator animator) {
-				animateContentIn(messageTextView);
-				animateContentIn(progressBar);
+				animateContentIn(messageTextView, progressBar);
 			}
 
 			public void onAnimationEnd(Animator animator) {
 				StatusBarMessageLayout.this.onViewShown();
 			}
 		});
-		animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-			private int previousAnimatedIntValue = translationYBottom;
-
-			public void onAnimationUpdate(ValueAnimator animator) {
-				int currentAnimatedIntValue = (Integer) animator.getAnimatedValue();
-				ViewCompat.offsetTopAndBottom(StatusBarMessageLayout.this, currentAnimatedIntValue - this.previousAnimatedIntValue);
-
-				//				if (BaseTransientBottomBar.USE_OFFSET_API) {
-				//					ViewCompat.offsetTopAndBottom(BaseMessage.this, currentAnimatedIntValue - this.previousAnimatedIntValue);
-				//				} else {
-				//					BaseMessage.this.setTranslationY((float) currentAnimatedIntValue);
-				//				}
-
-				this.previousAnimatedIntValue = currentAnimatedIntValue;
-			}
+		animator.addUpdateListener(a -> {
+			int currentAnimatedIntValue = (Integer) a.getAnimatedValue();
+			setTranslationY((float) currentAnimatedIntValue);
 		});
 		animator.start();
 	}
@@ -254,32 +211,52 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			}
 
 			public void onAnimationEnd(Animator animator) {
-				ViewGroup parent = (ViewGroup) getParent();
-				if (parent != null) {
-					parent.removeView(StatusBarMessageLayout.this);
-				}
-
-				//BaseTransientBottomBar.this.onViewHidden(event);
+				onViewHidden();
 			}
 		});
-		animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-			private int previousAnimatedIntValue = 0;
-
-			public void onAnimationUpdate(ValueAnimator animator) {
-				int currentAnimatedIntValue = (Integer) animator.getAnimatedValue();
-
-				ViewCompat.offsetTopAndBottom(StatusBarMessageLayout.this, currentAnimatedIntValue - this.previousAnimatedIntValue);
-				//				ViewCompat.offsetTopAndBottom(BaseTransientBottomBar.this.view, currentAnimatedIntValue - this.previousAnimatedIntValue);
-				//				if (BaseTransientBottomBar.USE_OFFSET_API) {
-				//					ViewCompat.offsetTopAndBottom(BaseTransientBottomBar.this.view, currentAnimatedIntValue - this.previousAnimatedIntValue);
-				//				} else {
-				//					BaseTransientBottomBar.this.view.setTranslationY((float)currentAnimatedIntValue);
-				//				}
-
-				this.previousAnimatedIntValue = currentAnimatedIntValue;
-			}
+		animator.addUpdateListener(a -> {
+			int currentAnimatedIntValue = (Integer) a.getAnimatedValue();
+			setTranslationY((float) currentAnimatedIntValue);
 		});
 		animator.start();
+	}
+
+	private void onViewShown() {
+		//		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+		//			Window window = getWindow();
+		//
+		//			window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+		//			if (!statusBarColorOriginalSaved) {
+		//				statusBarColorOriginal = window.getStatusBarColor();
+		//				statusBarColorOriginalSaved = true;
+		//			}
+		//			window.setStatusBarColor(statusBarColorOriginal);
+		//		}
+
+
+	}
+
+	private void onViewHidden() {
+		//SimpleMessageManager.getInstance().onDismissed(this.managerCallback);
+
+		ViewParent parent = this.getParent();
+		if (parent instanceof ViewGroup) {
+			((ViewGroup) parent).removeView(this);
+		}
+
+		//		if (statusBarColorOriginalSaved) {
+		//			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+		//				Window window = getWindow();
+		//				window.setStatusBarColor(statusBarColorOriginal);
+		//			}
+		//			statusBarColorOriginalSaved = false;
+		//		}
+
+		if (systemUiVisibilitySaved) {
+			View decorView = getDecorView();
+			decorView.setSystemUiVisibility(systemUiVisibility);
+			systemUiVisibilitySaved = false;
+		}
 	}
 
 	private void animateContentIn(@Nullable View... views) {
@@ -289,7 +266,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 		for (View view : views) {
 			view.setAlpha(0.0F);
-			view.animate().alpha(1.0F).setDuration(500L).setStartDelay((long) 100).start();
+			view.animate().alpha(1.0F).setDuration(300L).setStartDelay((long) 100).start();
 		}
 	}
 
@@ -300,7 +277,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 		for (View view : views) {
 			view.setAlpha(1.0F);
-			view.animate().alpha(0.0F).setDuration(500L).setStartDelay((long) 100).start();
+			view.animate().alpha(0.0F).setDuration(300L).start();
 		}
 	}
 
@@ -319,16 +296,16 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void init() {
-		ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
-			Log.d(TAG, "setOnApplyWindowInsetsListener: insets=" + insets);
-
-			//v.setPadding(v.getPaddingLeft(), insets.getSystemWindowInsetTop(), v.getPaddingRight(), v.getPaddingBottom());
-			return insets;
-		});
+		//		ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
+		//			Log.d(TAG, "setOnApplyWindowInsetsListener: insets=" + insets);
+		//
+		//			v.setPadding(v.getPaddingLeft(), insets.getSystemWindowInsetTop(), v.getPaddingRight(), v.getPaddingBottom());
+		//			return insets;
+		//		});
 
 		//ViewCompat.setAccessibilityLiveRegion(this, 1);
 		//ViewCompat.setImportantForAccessibility(this, 1);
-		ViewCompat.setFitsSystemWindows(this, true);
+		//		ViewCompat.setFitsSystemWindows(this, true);
 
 		LayoutInflater.from(getContext()).inflate(R.layout.message_statusbar, this);
 
@@ -337,12 +314,16 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 		messageTextView = findViewById(R.id.text);
 		progressBar = findViewById(R.id.progress);
-
-
-		ViewCompat.setElevation(this, Util.dpToPx(8));
-
+		
 		if (messageRecord != null) {
-			setBackgroundColor(messageRecord.getBackgroundColor());
+			int backgroundColor = messageRecord.getBackgroundColor();
+			if (backgroundColor != 0) {
+				setBackgroundColor(backgroundColor);
+			} else {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+					setBackgroundColor(getWindow().getStatusBarColor());
+				}
+			}
 			messageTextView.setText(messageRecord.getMessage());
 
 			int textColor = messageRecord.getTextColor();
