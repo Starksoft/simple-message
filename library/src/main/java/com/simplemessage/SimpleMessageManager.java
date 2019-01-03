@@ -4,9 +4,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
+import android.util.Log;
+
+import static com.simplemessage.util.Util.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 final class SimpleMessageManager {
+
+	private static final String TAG = "SimpleMessageManager";
 
 	private static final SimpleMessageManager INSTANCE = new SimpleMessageManager();
 
@@ -29,28 +34,54 @@ final class SimpleMessageManager {
 			showInternal(message, duration);
 
 		} else {
-			currentMessage.getCallback().dismiss();
-			handler.postDelayed(() -> showInternal(message, duration), 300);
+			// TODO: 03/01/2019 Решить, нужно ли разрешать дубликаты сообщений
+			MessageRecord currentMessageRecord = currentMessage.getMessageRecord();
+			MessageRecord newMessageRecord = message.getMessageRecord();
+
+			if (newMessageRecord.equals(currentMessageRecord)) {
+				Log.d(TAG, "show: trying to show the same message.. skipping");
+
+			} else {
+				if (!currentMessage.isDismissing()) {
+					handler.removeCallbacksAndMessages(null);
+					currentMessage.setOnDismissListener(() -> {
+						currentMessage.setOnDismissListener(null);
+						showInternal(message, duration);
+					});
+					currentMessage.getCallback().dismiss();
+				} else {
+					Log.d(TAG, "show: we are in dismissing state");
+				}
+			}
 		}
 	}
 
 	public void hide(@NonNull Message message) {
 		message.getCallback().dismiss();
+		message.showSystemUi();
 	}
 
 	private void showInternal(@NonNull Message message, int duration) {
-		currentMessage = message;
+		currentMessage = checkNotNull(message);
 		Callback callback = currentMessage.getCallback();
 		callback.show();
+		currentMessage.hideSystemUi();
 		if (duration > 0) {
 			handler.removeCallbacksAndMessages(null);
 			handler.postDelayed(() -> {
 				//noinspection ConstantConditions
 				if (callback != null) {
 					callback.dismiss();
+					currentMessage.showSystemUi();
+					currentMessage = null;
 				}
 			}, duration);
 		}
+	}
+
+	public void destroy() {
+		handler.removeCallbacksAndMessages(null);
+		currentMessage = null;
 	}
 
 	public interface Callback {

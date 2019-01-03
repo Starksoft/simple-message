@@ -23,7 +23,6 @@
 		android:layout_height="wrap_content"
 		android:textColor="#fff"
 		android:textSize="14sp"
-		android:textStyle="bold"
 		tools:text="Загрузка..." />
 
 </merge>

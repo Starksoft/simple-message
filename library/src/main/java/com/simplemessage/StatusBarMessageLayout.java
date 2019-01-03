@@ -3,6 +3,7 @@ package com.simplemessage;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.PorterDuff;
@@ -15,7 +16,6 @@ import android.support.annotation.UiThread;
 import android.support.design.animation.AnimationUtils;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -29,25 +29,35 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public final class StatusBarMessageLayout extends LinearLayout implements Message {
+import com.simplemessage.util.Util;
+
+@SuppressLint("ViewConstructor")
+final class StatusBarMessageLayout extends LinearLayout implements Message {
 
 	public static final int EVENT_SHOW = 0;
 	public static final int EVENT_HIDE = 1;
-	public static final int PADDIND_LEFT_RIGHT = Util.dpToPx(8);
-	private static final String TAG = "BaseMessage";
-	private static final Handler handler = new Handler(Looper.getMainLooper(), message -> {
+	public static final int PADDING_LEFT_RIGHT = Util.dpToPx(8);
+	private static final String TAG = "StatusBarMessageLayout";
+	private final MessageRecord messageRecord;
+	private final AccessibilityManager accessibilityManager;
+	@Nullable private OnDismissListener onDismissListener;
+	@Nullable private OnLayoutChangeListener onLayoutChangeListener;
+	private TextView messageTextView;
+	private ProgressBar progressBar;
+	private boolean isDismissing;
+	private final Handler handler = new Handler(Looper.getMainLooper(), message -> {
 		switch (message.what) {
 			case 0:
 				((StatusBarMessageLayout) message.obj).showView();
 				return true;
 			case 1:
-				((StatusBarMessageLayout) message.obj).hideView(message.arg1);
+				((StatusBarMessageLayout) message.obj).hideView();
 				return true;
 			default:
 				return false;
 		}
 	});
-	@NonNull private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
+	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
 		public void show() {
 			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, StatusBarMessageLayout.this));
 		}
@@ -56,28 +66,6 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, StatusBarMessageLayout.this));
 		}
 	};
-	private final MessageRecord messageRecord;
-	private final AccessibilityManager accessibilityManager;
-	private OnLayoutChangeListener onLayoutChangeListener;
-	private TextView messageTextView;
-	private ProgressBar progressBar;
-	private boolean systemUiVisibilitySaved = false;
-	private int systemUiVisibility;
-
-	public StatusBarMessageLayout(@NonNull Context context) {
-		super(context);
-		throw new UnsupportedOperationException();
-	}
-
-	public StatusBarMessageLayout(@NonNull Context context, @Nullable AttributeSet attrs) {
-		super(context, attrs);
-		throw new UnsupportedOperationException();
-	}
-
-	public StatusBarMessageLayout(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-		super(context, attrs, defStyleAttr);
-		throw new UnsupportedOperationException();
-	}
 
 	public StatusBarMessageLayout(@NonNull Context context, @NonNull MessageRecord messageRecord) {
 		super(context);
@@ -86,21 +74,27 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		init();
 	}
 
+	@Override
+	public void setOnDismissListener(@Nullable OnDismissListener onDismissListener) {
+		this.onDismissListener = onDismissListener;
+	}
+
 	@UiThread
 	@Override
 	public void show() {
-		SimpleMessageManager.getInstance().show(this, 3000);
+		isDismissing = false;
+		SimpleMessageManager.getInstance().show(this, messageRecord.isPersistent() ? 0 : 3000);
 	}
 
 	@Override
 	public void hide() {
+		isDismissing = true;
 		SimpleMessageManager.getInstance().hide(this);
 	}
 
-	private void hideView(int arg1) {
-		Log.d(TAG, "hideView() called with: arg1 = [" + arg1 + "]");
-
-		animateViewOut();
+	@Override
+	public boolean isDismissing() {
+		return isDismissing;
 	}
 
 	@NonNull
@@ -114,7 +108,11 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void showView() {
-		Log.d(TAG, "showView() called");
+		Log.d(TAG, hashCode() + " showView() called");
+
+		if (isDismissing) {
+			throw new IllegalStateException();
+		}
 
 		ViewGroup target = ((ViewGroup) getDecorView());
 
@@ -143,35 +141,47 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			});
 		}
 
-		View decorView = getDecorView().getRootView();
+//		hideSystemUi();
+	}
 
-		if (!systemUiVisibilitySaved) {
-			systemUiVisibility = decorView.getSystemUiVisibility();
-			systemUiVisibilitySaved = true;
-		}
+	private void hideView() {
+		isDismissing = true;
+		Log.d(TAG, hashCode() + " hideView() called");
+
+		animateViewOut();
+	}
+
+	@Override
+	public void hideSystemUi() {
+		View decorView = getDecorView().getRootView();
 
 		decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
 		decorView.setOnSystemUiVisibilityChangeListener((visibility) -> setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE));
 	}
 
 	@Override
-	public void onDetachedFromWindow() {
-		getDecorView().setOnSystemUiVisibilityChangeListener(null);
-		super.onDetachedFromWindow();
+	public void showSystemUi() {
+		View decorView = getDecorView();
+		getDecorView().setSystemUiVisibility(0);
+		decorView.setOnSystemUiVisibilityChangeListener(null);
 	}
 
-	public void setOnLayoutChangeListener(OnLayoutChangeListener onLayoutChangeListener) {
+	public void setOnLayoutChangeListener(@Nullable OnLayoutChangeListener onLayoutChangeListener) {
 		this.onLayoutChangeListener = onLayoutChangeListener;
 	}
 
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		super.onLayout(changed, l, t, r, b);
-		if (this.onLayoutChangeListener != null) {
-			this.onLayoutChangeListener.onLayoutChange(this, l, t, r, b);
+		if (onLayoutChangeListener != null) {
+			onLayoutChangeListener.onLayoutChange(this, l, t, r, b);
 		}
 	}
 
 	private void animateViewIn() {
+		if (isDismissing) {
+			throw new IllegalStateException();
+		}
+
 		final int translationYBottom = -getTranslationYTop();
 
 		setTranslationY((float) translationYBottom);
@@ -197,6 +207,9 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void animateViewOut() {
+		if (!isDismissing) {
+			throw new IllegalStateException();
+		}
 		final int translationYBottom = -getTranslationYTop();
 
 		ValueAnimator animator = new ValueAnimator();
@@ -220,19 +233,27 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void onViewShown() {
-
+		Log.d(TAG, hashCode() + " onViewShown() called");
 	}
 
 	private void onViewHidden() {
+		if (!isDismissing) {
+			throw new IllegalStateException();
+		}
+
 		ViewParent parent = this.getParent();
 		if (parent instanceof ViewGroup) {
 			((ViewGroup) parent).removeView(this);
 		}
 
-		if (systemUiVisibilitySaved) {
-			View decorView = getDecorView();
-			decorView.setSystemUiVisibility(systemUiVisibility);
-			systemUiVisibilitySaved = false;
+//		showSystemUi();
+
+		Log.d(TAG, hashCode() + " onViewHidden() called");
+
+		isDismissing = false;
+
+		if (onDismissListener != null) {
+			onDismissListener.onDismissed();
 		}
 	}
 
@@ -289,7 +310,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		LayoutInflater.from(getContext()).inflate(R.layout.message_statusbar, this);
 
 		setGravity(Gravity.CENTER);
-		setPadding(PADDIND_LEFT_RIGHT, 0, PADDIND_LEFT_RIGHT, 0);
+		setPadding(PADDING_LEFT_RIGHT, 0, PADDING_LEFT_RIGHT, 0);
 
 		messageTextView = findViewById(R.id.text);
 		progressBar = findViewById(R.id.progress);
@@ -329,6 +350,12 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	@Override
 	public SimpleMessageManager.Callback getCallback() {
 		return managerCallback;
+	}
+
+	@NonNull
+	@Override
+	public MessageRecord getMessageRecord() {
+		return messageRecord;
 	}
 
 	interface OnLayoutChangeListener {

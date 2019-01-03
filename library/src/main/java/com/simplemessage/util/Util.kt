@@ -1,4 +1,4 @@
-package com.simplemessage
+package com.simplemessage.util
 
 import android.content.res.Resources
 import android.view.View
@@ -18,4 +18,14 @@ object Util {
 			View.GONE
 		}
 	}
+
+	@JvmStatic
+	fun <T> checkNotNull(reference: T?): T {
+		return if (reference == null) {
+			throw NullPointerException()
+		} else {
+			reference
+		}
+	}
+
 }

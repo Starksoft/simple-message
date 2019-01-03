@@ -10,18 +10,49 @@
 		android:id="@+id/showMessageButton"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_centerInParent="true"
-		android:clickable="true"
-		android:text="Show message" />
+		android:layout_centerHorizontal="true"
+		android:layout_marginTop="48dp"
+		android:text="Normal message" />
 
 	<Button
 		android:id="@+id/showMessageButton2"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_below="@+id/showMessageButton"
-		android:layout_centerInParent="true"
-		android:clickable="true"
-		android:text="Show success message" />
+		android:layout_centerHorizontal="true"
+		android:text="Normal message with progress" />
+
+	<Button
+		android:id="@+id/showMessageButton3"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/showMessageButton2"
+		android:layout_centerHorizontal="true"
+		android:text="Success message" />
+
+	<Button
+		android:id="@+id/showMessageButton4"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/showMessageButton3"
+		android:layout_centerHorizontal="true"
+		android:text="Error message" />
+
+	<Button
+		android:id="@+id/showMessageButton5"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/showMessageButton4"
+		android:layout_centerHorizontal="true"
+		android:text="Error message persistent" />
+
+	<Button
+		android:id="@+id/showMessageButton6"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/showMessageButton5"
+		android:layout_centerHorizontal="true"
+		android:text="Custom message" />
 
 </RelativeLayout>
 
