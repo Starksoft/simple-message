@@ -5,6 +5,7 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
 
+@SuppressWarnings("WeakerAccess")
 final class SimpleMessageManager {
 
 	private static final SimpleMessageManager INSTANCE = new SimpleMessageManager();
@@ -33,6 +34,10 @@ final class SimpleMessageManager {
 		}
 	}
 
+	public void hide(@NonNull Message message) {
+		message.getCallback().dismiss();
+	}
+
 	private void showInternal(@NonNull Message message, int duration) {
 		currentMessage = message;
 		Callback callback = currentMessage.getCallback();
@@ -49,6 +54,7 @@ final class SimpleMessageManager {
 	}
 
 	public interface Callback {
+
 		void show();
 
 		void dismiss();

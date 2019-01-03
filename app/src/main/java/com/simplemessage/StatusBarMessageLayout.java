@@ -13,6 +13,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.design.animation.AnimationUtils;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -22,6 +23,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -31,9 +33,8 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 	public static final int EVENT_SHOW = 0;
 	public static final int EVENT_HIDE = 1;
-
+	public static final int PADDIND_LEFT_RIGHT = Util.dpToPx(8);
 	private static final String TAG = "BaseMessage";
-
 	private static final Handler handler = new Handler(Looper.getMainLooper(), message -> {
 		switch (message.what) {
 			case 0:
@@ -46,7 +47,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 				return false;
 		}
 	});
-	@NonNull final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
+	@NonNull private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
 		public void show() {
 			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, StatusBarMessageLayout.this));
 		}
@@ -55,16 +56,13 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, StatusBarMessageLayout.this));
 		}
 	};
-	@Nullable private final MessageRecord messageRecord;
-	@Nullable SimpleMessageManager.Callback callback;
+	private final MessageRecord messageRecord;
+	private final AccessibilityManager accessibilityManager;
 	private OnLayoutChangeListener onLayoutChangeListener;
-
 	private TextView messageTextView;
 	private ProgressBar progressBar;
 	private boolean systemUiVisibilitySaved = false;
 	private int systemUiVisibility;
-	private boolean statusBarColorOriginalSaved = false;
-	private int statusBarColorOriginal;
 
 	public StatusBarMessageLayout(@NonNull Context context) {
 		super(context);
@@ -84,6 +82,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	public StatusBarMessageLayout(@NonNull Context context, @NonNull MessageRecord messageRecord) {
 		super(context);
 		this.messageRecord = messageRecord;
+		accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
 		init();
 	}
 
@@ -91,6 +90,11 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	@Override
 	public void show() {
 		SimpleMessageManager.getInstance().show(this, 3000);
+	}
+
+	@Override
+	public void hide() {
+		SimpleMessageManager.getInstance().hide(this);
 	}
 
 	private void hideView(int arg1) {
@@ -147,13 +151,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		}
 
 		decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
-		decorView.setOnSystemUiVisibilityChangeListener((visibility) -> {
-			this.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
-		});
-
-		//		hasOriginalStatusBarTranslucent = isTranslucentStatusBar()
-
-
+		decorView.setOnSystemUiVisibilityChangeListener((visibility) -> setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE));
 	}
 
 	@Override
@@ -174,7 +172,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void animateViewIn() {
-		final int translationYBottom = -getTranslationYBottom();
+		final int translationYBottom = -getTranslationYTop();
 
 		setTranslationY((float) translationYBottom);
 
@@ -188,7 +186,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 			}
 
 			public void onAnimationEnd(Animator animator) {
-				StatusBarMessageLayout.this.onViewShown();
+				onViewShown();
 			}
 		});
 		animator.addUpdateListener(a -> {
@@ -199,7 +197,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void animateViewOut() {
-		final int translationYBottom = -getTranslationYBottom();
+		final int translationYBottom = -getTranslationYTop();
 
 		ValueAnimator animator = new ValueAnimator();
 		animator.setIntValues(0, translationYBottom);
@@ -222,35 +220,14 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 	}
 
 	private void onViewShown() {
-		//		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-		//			Window window = getWindow();
-		//
-		//			window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-		//			if (!statusBarColorOriginalSaved) {
-		//				statusBarColorOriginal = window.getStatusBarColor();
-		//				statusBarColorOriginalSaved = true;
-		//			}
-		//			window.setStatusBarColor(statusBarColorOriginal);
-		//		}
-
 
 	}
 
 	private void onViewHidden() {
-		//SimpleMessageManager.getInstance().onDismissed(this.managerCallback);
-
 		ViewParent parent = this.getParent();
 		if (parent instanceof ViewGroup) {
 			((ViewGroup) parent).removeView(this);
 		}
-
-		//		if (statusBarColorOriginalSaved) {
-		//			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-		//				Window window = getWindow();
-		//				window.setStatusBarColor(statusBarColorOriginal);
-		//			}
-		//			statusBarColorOriginalSaved = false;
-		//		}
 
 		if (systemUiVisibilitySaved) {
 			View decorView = getDecorView();
@@ -281,7 +258,7 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 		}
 	}
 
-	private int getTranslationYBottom() {
+	private int getTranslationYTop() {
 		int translationY = this.getHeight();
 		ViewGroup.LayoutParams layoutParams = this.getLayoutParams();
 		if (layoutParams instanceof MarginLayoutParams) {
@@ -293,6 +270,8 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 	private boolean shouldAnimate() {
 		return true;
+		//List<AccessibilityServiceInfo> serviceList = accessibilityManager.getEnabledAccessibilityServiceList(1);
+		//return serviceList != null && serviceList.isEmpty();
 	}
 
 	private void init() {
@@ -305,12 +284,12 @@ public final class StatusBarMessageLayout extends LinearLayout implements Messag
 
 		//ViewCompat.setAccessibilityLiveRegion(this, 1);
 		//ViewCompat.setImportantForAccessibility(this, 1);
-		//		ViewCompat.setFitsSystemWindows(this, true);
+		//ViewCompat.setFitsSystemWindows(this, true);
 
 		LayoutInflater.from(getContext()).inflate(R.layout.message_statusbar, this);
 
 		setGravity(Gravity.CENTER);
-		setPadding(Util.dpToPx(8), 0, Util.dpToPx(8), 0);
+		setPadding(PADDIND_LEFT_RIGHT, 0, PADDIND_LEFT_RIGHT, 0);
 
 		messageTextView = findViewById(R.id.text);
 		progressBar = findViewById(R.id.progress);

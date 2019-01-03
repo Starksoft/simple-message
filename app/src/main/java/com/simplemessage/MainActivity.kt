@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
 		setContentView(R.layout.activity_main)
 
 		showMessageButton.setOnClickListener {
-			SimpleMessage.create(this, "Test!!!").show()
+			SimpleMessage.create(this, "loading...").show()
 		}
 
 		showMessageButton2.setOnClickListener {

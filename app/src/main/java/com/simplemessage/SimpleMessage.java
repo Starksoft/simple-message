@@ -63,4 +63,8 @@ public final class SimpleMessage {
 		view.show();
 	}
 
+	public void hide() {
+		view.hide();
+	}
+
 }

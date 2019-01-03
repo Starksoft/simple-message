@@ -10,4 +10,6 @@ public interface Message {
 
 	@UiThread
 	void show();
+
+	void hide();
 }
