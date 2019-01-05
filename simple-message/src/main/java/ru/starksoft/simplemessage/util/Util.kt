@@ -1,4 +1,4 @@
-package com.simplemessage.util
+package ru.starksoft.simplemessage.util
 
 import android.content.res.Resources
 import android.view.View

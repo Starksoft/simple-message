@@ -1,4 +1,4 @@
-package com.simplemessage;
+package ru.starksoft.simplemessage;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -29,7 +29,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.simplemessage.util.Util;
+import com.simplemessage.R;
+
+import ru.starksoft.simplemessage.util.Util;
 
 @SuppressLint("ViewConstructor")
 final class StatusBarMessageLayout extends LinearLayout implements Message {

@@ -1,4 +1,4 @@
-package com.simplemessage;
+package ru.starksoft.simplemessage;
 
 import android.app.Activity;
 import android.arch.lifecycle.Lifecycle;
@@ -11,7 +11,7 @@ import android.util.Log;
 
 import org.jetbrains.annotations.NotNull;
 
-import static com.simplemessage.util.Util.checkNotNull;
+import static ru.starksoft.simplemessage.util.Util.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 public final class SimpleMessage {

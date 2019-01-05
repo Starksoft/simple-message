@@ -1,4 +1,4 @@
-package com.simplemessage
+package ru.starksoft.simplemessage
 
 private const val TEXT_COLOR_WHITE = -0x1
 

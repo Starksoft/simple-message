@@ -1,4 +1,4 @@
-package com.simplemessage;
+package ru.starksoft.simplemessage;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
