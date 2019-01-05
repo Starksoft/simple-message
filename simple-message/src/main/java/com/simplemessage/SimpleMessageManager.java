@@ -1,5 +1,6 @@
 package com.simplemessage;
 
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -31,7 +32,11 @@ final class SimpleMessageManager {
 	public void show(@NonNull Message message, int duration) {
 		// There is no message showed
 		if (currentMessage == null) {
-			showInternal(message, duration);
+			int messageDelay = 0;
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				//messageDelay = 750;
+			}
+			showInternal(message, duration, messageDelay);
 
 		} else {
 			// TODO: 03/01/2019 Решить, нужно ли разрешать дубликаты сообщений
@@ -46,7 +51,7 @@ final class SimpleMessageManager {
 					handler.removeCallbacksAndMessages(null);
 					currentMessage.setOnDismissListener(() -> {
 						currentMessage.setOnDismissListener(null);
-						showInternal(message, duration);
+						showInternal(message, duration, 0);
 					});
 					currentMessage.getCallback().dismiss();
 				} else {
@@ -61,11 +66,28 @@ final class SimpleMessageManager {
 		message.showSystemUi();
 	}
 
-	private void showInternal(@NonNull Message message, int duration) {
+	private void showInternal(@NonNull Message message, int duration, int messageDelay) {
 		currentMessage = checkNotNull(message);
+		currentMessage.hideSystemUi();
+
+		//		handler.postDelayed(() -> {
+		//			Callback callback = currentMessage.getCallback();
+		//			callback.show();
+		//			if (duration > 0) {
+		//				handler.removeCallbacksAndMessages(null);
+		//				handler.postDelayed(() -> {
+		//					//noinspection ConstantConditions
+		//					if (callback != null) {
+		//						callback.dismiss();
+		//						currentMessage.showSystemUi();
+		//						currentMessage = null;
+		//					}
+		//				}, duration);
+		//			}
+		//		}, messageDelay);
+
 		Callback callback = currentMessage.getCallback();
 		callback.show();
-		currentMessage.hideSystemUi();
 		if (duration > 0) {
 			handler.removeCallbacksAndMessages(null);
 			handler.postDelayed(() -> {

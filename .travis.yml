@@ -1,0 +1,13 @@
+language: android
+android:
+  components:
+    - build-tools-28.0.3
+    - android-28
+
+branches:
+  only:
+  - master
+
+script:
+  - ./gradlew install
+  - ./gradlew bintrayUpload
