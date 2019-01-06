@@ -1,10 +1,10 @@
-package com.simplemessage.example
+package ru.starksoft.simplemessage.example
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
 import ru.starksoft.simplemessage.MessageTemplate
 import ru.starksoft.simplemessage.SimpleMessage
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 

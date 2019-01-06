@@ -3,13 +3,11 @@ package ru.starksoft.simplemessage;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.PorterDuff;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
@@ -17,8 +15,6 @@ import android.support.design.animation.AnimationUtils;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -26,34 +22,27 @@ import android.view.Window;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
-import com.simplemessage.R;
-
-import ru.starksoft.simplemessage.util.Util;
-
-@SuppressLint("ViewConstructor")
-final class StatusBarMessageLayout extends LinearLayout implements Message {
+public abstract class BaseMessageLayout extends LinearLayout implements Message {
 
 	public static final int EVENT_SHOW = 0;
 	public static final int EVENT_HIDE = 1;
-	public static final int PADDING_LEFT_RIGHT = Util.dpToPx(8);
-	private static final String TAG = "StatusBarMessageLayout";
-	private final MessageRecord messageRecord;
+	public static final long VIEW_ANIMATION_DURATION = 250L;
+	public static final long CONTENT_ANIMATION_DURATION = 300L;
+	private static final String TAG = "BaseMessageLayout";
+	@NonNull protected final MessageData messageData;
 	private final AccessibilityManager accessibilityManager;
-	@Nullable private OnDismissListener onDismissListener;
+	private final MessageAnimationCallback messageAnimationCallback = createAnimationCallback();
+	@Nullable private Message.OnDismissListener onDismissListener;
 	@Nullable private OnLayoutChangeListener onLayoutChangeListener;
-	private TextView messageTextView;
-	private ProgressBar progressBar;
 	private boolean isDismissing;
 	private final Handler handler = new Handler(Looper.getMainLooper(), message -> {
 		switch (message.what) {
 			case 0:
-				((StatusBarMessageLayout) message.obj).showView();
+				((BaseMessageLayout) message.obj).showView();
 				return true;
 			case 1:
-				((StatusBarMessageLayout) message.obj).hideView();
+				((BaseMessageLayout) message.obj).hideView();
 				return true;
 			default:
 				return false;
@@ -61,23 +50,23 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 	});
 	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
 		public void show() {
-			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, StatusBarMessageLayout.this));
+			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, BaseMessageLayout.this));
 		}
 
 		public void dismiss() {
-			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, StatusBarMessageLayout.this));
+			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, BaseMessageLayout.this));
 		}
 	};
 
-	public StatusBarMessageLayout(@NonNull Context context, @NonNull MessageRecord messageRecord) {
+	public BaseMessageLayout(@NonNull Context context, @NonNull MessageData messageData) {
 		super(context);
-		this.messageRecord = messageRecord;
+		this.messageData = messageData;
 		accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
-		init();
+		createView();
 	}
 
 	@Override
-	public void setOnDismissListener(@Nullable OnDismissListener onDismissListener) {
+	public void setOnDismissListener(@Nullable Message.OnDismissListener onDismissListener) {
 		this.onDismissListener = onDismissListener;
 	}
 
@@ -85,7 +74,8 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 	@Override
 	public void show() {
 		isDismissing = false;
-		SimpleMessageManager.getInstance().show(this, messageRecord.isPersistent() ? 0 : 3000);
+		// TODO: 06/01/2019 Move delay to manager
+		SimpleMessageManager.getInstance().show(this, messageData.isPersistent() ? 0 : 3000);
 	}
 
 	@Override
@@ -105,7 +95,7 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 	}
 
 	@NonNull
-	private Window getWindow() {
+	protected Window getWindow() {
 		return ((Activity) getContext()).getWindow();
 	}
 
@@ -130,7 +120,7 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 			if (shouldAnimate()) {
 				animateViewIn();
 			} else {
-				onViewShown();
+				messageAnimationCallback.onShowAnimationEnd();
 			}
 		} else {
 			setOnLayoutChangeListener((view, left, top, right, bottom) -> {
@@ -138,12 +128,10 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 				if (shouldAnimate()) {
 					animateViewIn();
 				} else {
-					onViewShown();
+					messageAnimationCallback.onShowAnimationEnd();
 				}
 			});
 		}
-
-//		hideSystemUi();
 	}
 
 	private void hideView() {
@@ -154,6 +142,7 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 	}
 
 	@Override
+	@CallSuper
 	public void hideSystemUi() {
 		View decorView = getDecorView().getRootView();
 
@@ -162,16 +151,18 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 	}
 
 	@Override
+	@CallSuper
 	public void showSystemUi() {
 		View decorView = getDecorView();
-		getDecorView().setSystemUiVisibility(0);
+		decorView.setSystemUiVisibility(0);
 		decorView.setOnSystemUiVisibilityChangeListener(null);
 	}
 
-	public void setOnLayoutChangeListener(@Nullable OnLayoutChangeListener onLayoutChangeListener) {
+	void setOnLayoutChangeListener(@Nullable OnLayoutChangeListener onLayoutChangeListener) {
 		this.onLayoutChangeListener = onLayoutChangeListener;
 	}
 
+	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		super.onLayout(changed, l, t, r, b);
 		if (onLayoutChangeListener != null) {
@@ -191,20 +182,17 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 		ValueAnimator animator = new ValueAnimator();
 		animator.setIntValues(translationYBottom, 0);
 		animator.setInterpolator(AnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
-		animator.setDuration(250L);
+		animator.setDuration(VIEW_ANIMATION_DURATION);
 		animator.addListener(new AnimatorListenerAdapter() {
 			public void onAnimationStart(Animator animator) {
-				animateContentIn(messageTextView, progressBar);
+				messageAnimationCallback.onShowAnimationStart();
 			}
 
 			public void onAnimationEnd(Animator animator) {
-				onViewShown();
+				messageAnimationCallback.onShowAnimationEnd();
 			}
 		});
-		animator.addUpdateListener(a -> {
-			int currentAnimatedIntValue = (Integer) a.getAnimatedValue();
-			setTranslationY((float) currentAnimatedIntValue);
-		});
+		animator.addUpdateListener(a -> setTranslationY((float) (Integer) a.getAnimatedValue()));
 		animator.start();
 	}
 
@@ -217,25 +205,19 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 		ValueAnimator animator = new ValueAnimator();
 		animator.setIntValues(0, translationYBottom);
 		animator.setInterpolator(AnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR);
-		animator.setDuration(250L);
+		animator.setDuration(VIEW_ANIMATION_DURATION);
 		animator.addListener(new AnimatorListenerAdapter() {
 			public void onAnimationStart(Animator animator) {
-				animateContentOut(messageTextView, progressBar);
+				messageAnimationCallback.onHideAnimationStart();
 			}
 
 			public void onAnimationEnd(Animator animator) {
+				messageAnimationCallback.onHideAnimationEnd();
 				onViewHidden();
 			}
 		});
-		animator.addUpdateListener(a -> {
-			int currentAnimatedIntValue = (Integer) a.getAnimatedValue();
-			setTranslationY((float) currentAnimatedIntValue);
-		});
+		animator.addUpdateListener(a -> setTranslationY((float) (Integer) a.getAnimatedValue()));
 		animator.start();
-	}
-
-	private void onViewShown() {
-		Log.d(TAG, hashCode() + " onViewShown() called");
 	}
 
 	private void onViewHidden() {
@@ -243,12 +225,10 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 			throw new IllegalStateException();
 		}
 
-		ViewParent parent = this.getParent();
+		ViewParent parent = getParent();
 		if (parent instanceof ViewGroup) {
 			((ViewGroup) parent).removeView(this);
 		}
-
-//		showSystemUi();
 
 		Log.d(TAG, hashCode() + " onViewHidden() called");
 
@@ -259,31 +239,31 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 		}
 	}
 
-	private void animateContentIn(@Nullable View... views) {
+	protected void animateContentIn(@Nullable View... views) {
 		if (views == null) {
 			return;
 		}
 
 		for (View view : views) {
 			view.setAlpha(0.0F);
-			view.animate().alpha(1.0F).setDuration(300L).setStartDelay((long) 100).start();
+			view.animate().alpha(1.0F).setDuration(CONTENT_ANIMATION_DURATION).setStartDelay((long) 100).start();
 		}
 	}
 
-	private void animateContentOut(@Nullable View... views) {
+	protected void animateContentOut(@Nullable View... views) {
 		if (views == null) {
 			return;
 		}
 
 		for (View view : views) {
 			view.setAlpha(1.0F);
-			view.animate().alpha(0.0F).setDuration(300L).start();
+			view.animate().alpha(0.0F).setDuration(CONTENT_ANIMATION_DURATION).start();
 		}
 	}
 
 	private int getTranslationYTop() {
-		int translationY = this.getHeight();
-		ViewGroup.LayoutParams layoutParams = this.getLayoutParams();
+		int translationY = getHeight();
+		ViewGroup.LayoutParams layoutParams = getLayoutParams();
 		if (layoutParams instanceof MarginLayoutParams) {
 			translationY += ((MarginLayoutParams) layoutParams).bottomMargin;
 		}
@@ -297,49 +277,12 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 		//return serviceList != null && serviceList.isEmpty();
 	}
 
-	private void init() {
-		//		ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
-		//			Log.d(TAG, "setOnApplyWindowInsetsListener: insets=" + insets);
-		//
-		//			v.setPadding(v.getPaddingLeft(), insets.getSystemWindowInsetTop(), v.getPaddingRight(), v.getPaddingBottom());
-		//			return insets;
-		//		});
+	protected abstract void createView();
 
-		//ViewCompat.setAccessibilityLiveRegion(this, 1);
-		//ViewCompat.setImportantForAccessibility(this, 1);
-		//ViewCompat.setFitsSystemWindows(this, true);
+	@NonNull
+	protected abstract MessageAnimationCallback createAnimationCallback();
 
-		LayoutInflater.from(getContext()).inflate(R.layout.message_statusbar, this);
-
-		setGravity(Gravity.CENTER);
-		setPadding(PADDING_LEFT_RIGHT, 0, PADDING_LEFT_RIGHT, 0);
-
-		messageTextView = findViewById(R.id.text);
-		progressBar = findViewById(R.id.progress);
-
-		if (messageRecord != null) {
-			int backgroundColor = messageRecord.getBackgroundColor();
-			if (backgroundColor != 0) {
-				setBackgroundColor(backgroundColor);
-			} else {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-					setBackgroundColor(getWindow().getStatusBarColor());
-				}
-			}
-			messageTextView.setText(messageRecord.getMessage());
-
-			int textColor = messageRecord.getTextColor();
-			messageTextView.setTextColor(textColor);
-
-			boolean progress = messageRecord.getProgress();
-			Util.setVisibility(progressBar, progress);
-			if (progress) {
-				progressBar.getIndeterminateDrawable().setColorFilter(textColor, PorterDuff.Mode.SRC_IN);
-			}
-		}
-	}
-
-	public int getStatusBarHeightInPixels() {
+	final int getStatusBarHeightInPixels() {
 		int result = 0;
 		int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
 		if (resourceId > 0) {
@@ -356,8 +299,8 @@ final class StatusBarMessageLayout extends LinearLayout implements Message {
 
 	@NonNull
 	@Override
-	public MessageRecord getMessageRecord() {
-		return messageRecord;
+	public MessageData getMessageData() {
+		return messageData;
 	}
 
 	interface OnLayoutChangeListener {
