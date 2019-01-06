@@ -33,6 +33,15 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 	@NonNull protected final MessageData messageData;
 	private final AccessibilityManager accessibilityManager;
 	private final MessageAnimationCallback messageAnimationCallback = createAnimationCallback();
+	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
+		public void show() {
+			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, BaseMessageLayout.this));
+		}
+
+		public void dismiss() {
+			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, BaseMessageLayout.this));
+		}
+	};
 	@Nullable private Message.OnDismissListener onDismissListener;
 	@Nullable private OnLayoutChangeListener onLayoutChangeListener;
 	private boolean isDismissing;
@@ -48,15 +57,6 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 				return false;
 		}
 	});
-	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
-		public void show() {
-			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, BaseMessageLayout.this));
-		}
-
-		public void dismiss() {
-			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, BaseMessageLayout.this));
-		}
-	};
 
 	public BaseMessageLayout(@NonNull Context context, @NonNull MessageData messageData) {
 		super(context);
@@ -64,6 +64,11 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 		accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
 		createView();
 	}
+
+	protected abstract void createView();
+
+	@NonNull
+	protected abstract MessageAnimationCallback createAnimationCallback();
 
 	@Override
 	public void setOnDismissListener(@Nullable Message.OnDismissListener onDismissListener) {
@@ -263,10 +268,10 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 
 	private int getTranslationYTop() {
 		int translationY = getHeight();
-		ViewGroup.LayoutParams layoutParams = getLayoutParams();
-		if (layoutParams instanceof MarginLayoutParams) {
-			translationY += ((MarginLayoutParams) layoutParams).bottomMargin;
-		}
+		//		ViewGroup.LayoutParams layoutParams = getLayoutParams();
+		//		if (layoutParams instanceof MarginLayoutParams) {
+		//			translationY += ((MarginLayoutParams) layoutParams).bottomMargin;
+		//		}
 
 		return translationY;
 	}
@@ -276,11 +281,6 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 		//List<AccessibilityServiceInfo> serviceList = accessibilityManager.getEnabledAccessibilityServiceList(1);
 		//return serviceList != null && serviceList.isEmpty();
 	}
-
-	protected abstract void createView();
-
-	@NonNull
-	protected abstract MessageAnimationCallback createAnimationCallback();
 
 	final int getStatusBarHeightInPixels() {
 		int result = 0;

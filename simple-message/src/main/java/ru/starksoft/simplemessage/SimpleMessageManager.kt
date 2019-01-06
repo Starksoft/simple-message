@@ -9,7 +9,6 @@ import android.util.Log
 internal class SimpleMessageManager private constructor() {
 
 	private val handler = Handler(Looper.getMainLooper())
-
 	private var currentMessage: Message? = null
 
 	@UiThread
@@ -54,7 +53,8 @@ internal class SimpleMessageManager private constructor() {
 
 	private fun showInternal(message: Message, duration: Int, messageDelay: Int) {
 		currentMessage = message!!
-		currentMessage?.hideSystemUi()
+		val currentMessageSafe = currentMessage!!
+		currentMessageSafe.hideSystemUi()
 
 		//		handler.postDelayed(() -> {
 		//			Callback callback = currentMessage.getCallback();
@@ -72,13 +72,13 @@ internal class SimpleMessageManager private constructor() {
 		//			}
 		//		}, messageDelay);
 
-		val callback = currentMessage!!.getCallback()
+		val callback = currentMessageSafe.getCallback()
 		callback.show()
 		if (duration > 0) {
 			handler.removeCallbacksAndMessages(null)
 			handler.postDelayed({
 									callback.dismiss()
-									currentMessage!!.showSystemUi()
+									currentMessageSafe.showSystemUi()
 									currentMessage = null
 
 								}, duration.toLong())
