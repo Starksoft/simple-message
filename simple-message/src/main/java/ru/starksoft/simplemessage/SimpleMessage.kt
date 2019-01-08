@@ -120,5 +120,8 @@ class SimpleMessage private constructor(activity: Activity, messageData: Message
 			return Builder(activity, message, template)
 		}
 
+		fun hide() {
+			SimpleMessageManager.instance.hide()
+		}
 	}
 }

@@ -46,6 +46,14 @@ internal class SimpleMessageManager private constructor() {
 		}
 	}
 
+	fun hide() {
+		currentMessage?.apply {
+			getCallback().dismiss()
+			showSystemUi()
+			currentMessage = null
+		}
+	}
+
 	fun hide(message: Message) {
 		message.getCallback().dismiss()
 		message.showSystemUi()

@@ -77,5 +77,12 @@
 		android:layout_centerHorizontal="true"
 		android:text="Custom message" />
 
-</RelativeLayout>
+	<Button
+		android:id="@+id/showMessageButton7"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/showMessageButton5"
+		android:layout_centerHorizontal="true"
+		android:text="Hide all messages" />
 
+</RelativeLayout>

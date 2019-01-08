@@ -43,6 +43,10 @@ class MainActivity : AppCompatActivity() {
 				.messageType(getMessageType())
 				.show()
 		}
+
+		showMessageButton7.setOnClickListener {
+			SimpleMessage.hide()
+		}
 	}
 
 	private fun getMessageType(): MessageType {
