@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge
+<LinearLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
-	android:layout_height="24dp"
+	android:layout_height="wrap_content"
 	android:gravity="center"
+	android:minHeight="24dp"
 	android:paddingLeft="8dp"
 	android:paddingRight="8dp"
-	tools:background="#F00"
-	tools:parentTag="android.widget.LinearLayout">
+	tools:background="#F00">
 
 	<ProgressBar
 		android:id="@+id/progress"
 		style="?android:attr/progressBarStyleSmall"
-		android:layout_width="14dp"
-		android:layout_height="14dp"
+		android:layout_width="12dp"
+		android:layout_height="12dp"
 		android:layout_marginRight="6dp" />
 
 	<TextView
@@ -25,4 +25,4 @@
 		android:textSize="14sp"
 		tools:text="Загрузка..." />
 
-</merge>
+</LinearLayout>

@@ -4,23 +4,19 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PorterDuff
 import android.os.Build
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.widget.ProgressBar
 import android.widget.TextView
-import ru.starksoft.simplemessage.util.dpToPx
 import ru.starksoft.simplemessage.util.setVisibility
 
 @SuppressLint("ViewConstructor")
 internal class StatusBarMessageLayout(context: Context, messageData: MessageData) : BaseMessageLayout(context, messageData) {
+
 	private lateinit var messageTextView: TextView
 	private lateinit var progressBar: ProgressBar
 
 	override fun createView() {
 		LayoutInflater.from(context).inflate(R.layout.message_statusbar, this)
-
-		gravity = Gravity.CENTER
-		setPadding(PADDING_LEFT_RIGHT, 0, PADDING_LEFT_RIGHT, 0)
 
 		messageTextView = findViewById(R.id.text)
 		progressBar = findViewById(R.id.progress)
@@ -46,6 +42,19 @@ internal class StatusBarMessageLayout(context: Context, messageData: MessageData
 		}
 	}
 
+	override fun getViewHeight(): Int {
+		return getStatusBarHeightInPixels()
+	}
+
+	private fun getStatusBarHeightInPixels(): Int {
+		var result = 0
+		val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+		if (resourceId > 0) {
+			result = resources.getDimensionPixelSize(resourceId)
+		}
+		return result
+	}
+
 	override fun createAnimationCallback(): MessageAnimationCallback {
 		return object : MessageAnimationCallback {
 			override fun onShowAnimationStart() {
@@ -64,9 +73,5 @@ internal class StatusBarMessageLayout(context: Context, messageData: MessageData
 
 			}
 		}
-	}
-
-	companion object {
-		val PADDING_LEFT_RIGHT = 8.dpToPx()
 	}
 }

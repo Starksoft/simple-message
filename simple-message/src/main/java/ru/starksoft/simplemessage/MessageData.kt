@@ -11,7 +11,9 @@ data class MessageData(
 
 	var isProgress: Boolean = false,
 
-	var isPersistent: Boolean = false
+	var isPersistent: Boolean = false,
+
+	var messageType: MessageType = MessageType.STATUS_BAR
 ) {
 	companion object {
 

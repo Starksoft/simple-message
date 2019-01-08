@@ -7,9 +7,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.Px;
 import android.support.annotation.UiThread;
 import android.support.design.animation.AnimationUtils;
 import android.support.v4.content.ContextCompat;
@@ -21,9 +21,8 @@ import android.view.ViewParent;
 import android.view.Window;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 
-public abstract class BaseMessageLayout extends LinearLayout implements Message {
+public abstract class BaseMessageLayout extends FrameLayout implements Message {
 
 	public static final int EVENT_SHOW = 0;
 	public static final int EVENT_HIDE = 1;
@@ -70,6 +69,9 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 	@NonNull
 	protected abstract MessageAnimationCallback createAnimationCallback();
 
+	@Px
+	protected abstract int getViewHeight();
+
 	@Override
 	public void setOnDismissListener(@Nullable Message.OnDismissListener onDismissListener) {
 		this.onDismissListener = onDismissListener;
@@ -115,8 +117,7 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 
 		ViewParent parent = getParent();
 		if (parent == null) {
-			FrameLayout.LayoutParams layoutParams =
-					new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, getStatusBarHeightInPixels());
+			FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, getViewHeight());
 
 			target.addView(this, layoutParams);
 		}
@@ -147,7 +148,6 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 	}
 
 	@Override
-	@CallSuper
 	public void hideSystemUi() {
 		View decorView = getDecorView().getRootView();
 
@@ -156,7 +156,6 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 	}
 
 	@Override
-	@CallSuper
 	public void showSystemUi() {
 		View decorView = getDecorView();
 		decorView.setSystemUiVisibility(0);
@@ -267,13 +266,7 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 	}
 
 	private int getTranslationYTop() {
-		int translationY = getHeight();
-		//		ViewGroup.LayoutParams layoutParams = getLayoutParams();
-		//		if (layoutParams instanceof MarginLayoutParams) {
-		//			translationY += ((MarginLayoutParams) layoutParams).bottomMargin;
-		//		}
-
-		return translationY;
+		return getHeight();
 	}
 
 	private boolean shouldAnimate() {
@@ -282,7 +275,8 @@ public abstract class BaseMessageLayout extends LinearLayout implements Message 
 		//return serviceList != null && serviceList.isEmpty();
 	}
 
-	final int getStatusBarHeightInPixels() {
+	@Px
+	protected final int getStatusBarHeight() {
 		int result = 0;
 		int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
 		if (resourceId > 0) {

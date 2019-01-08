@@ -8,11 +8,11 @@ import android.support.annotation.ColorInt
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 
-class SimpleMessage private constructor(activity: Activity, messageData: MessageData, messageType: MessageType) {
+class SimpleMessage private constructor(activity: Activity, messageData: MessageData) {
 
 	private val activity: Activity = checkNotNull(activity)
 
-	private val view: Message = getMessageImplByType(messageType, activity, messageData)
+	private val view: Message = getMessageImplByType(activity, messageData)
 
 	init {
 		observeLifecycle()
@@ -38,16 +38,16 @@ class SimpleMessage private constructor(activity: Activity, messageData: Message
 		view.hide()
 	}
 
-	private fun getMessageImplByType(messageType: MessageType, activity: Activity, messageData: MessageData): Message {
-		return when (messageType) {
+	private fun getMessageImplByType(activity: Activity, messageData: MessageData): Message {
+		return when (messageData.messageType) {
 			MessageType.STATUS_BAR -> StatusBarMessageLayout(activity, messageData)
 
-			MessageType.TOOL_BAR -> TODO("Not implemented")
+			MessageType.TOOL_BAR -> ToolBarMessageLayout(activity, messageData)
 		}
 	}
 
 	@Suppress("MemberVisibilityCanBePrivate")
-	class Builder(private val activity: Activity, message: CharSequence, private val messageType: MessageType, template: MessageTemplate?) {
+	class Builder(private val activity: Activity, message: CharSequence, template: MessageTemplate?) {
 
 		private val messageData: MessageData
 
@@ -92,8 +92,13 @@ class SimpleMessage private constructor(activity: Activity, messageData: Message
 			return this
 		}
 
+		fun messageType(messageType: MessageType): Builder {
+			messageData.messageType = messageType
+			return this
+		}
+
 		fun build(): SimpleMessage {
-			return SimpleMessage(activity, messageData, messageType)
+			return SimpleMessage(activity, messageData)
 		}
 
 		fun show() {
@@ -107,17 +112,12 @@ class SimpleMessage private constructor(activity: Activity, messageData: Message
 
 		@JvmStatic
 		fun create(activity: Activity, message: CharSequence): Builder {
-			return create(activity, message, MessageType.STATUS_BAR, null)
+			return create(activity, message, null)
 		}
 
 		@JvmStatic
 		fun create(activity: Activity, message: CharSequence, template: MessageTemplate?): Builder {
-			return create(activity, message, MessageType.STATUS_BAR, template)
-		}
-
-		@JvmStatic
-		fun create(activity: Activity, message: CharSequence, messageType: MessageType, template: MessageTemplate?): Builder {
-			return Builder(activity, message, messageType, template)
+			return Builder(activity, message, template)
 		}
 
 	}
