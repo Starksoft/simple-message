@@ -7,6 +7,8 @@ import ru.starksoft.simplemessage.MessageTemplate
 import ru.starksoft.simplemessage.MessageType
 import ru.starksoft.simplemessage.SimpleMessage
 
+private const val TAG = "MainActivity"
+
 class MainActivity : AppCompatActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {

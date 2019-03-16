@@ -1,6 +1,5 @@
 package ru.starksoft.simplemessage
 
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.support.annotation.UiThread
@@ -14,11 +13,7 @@ internal class SimpleMessageManager private constructor() {
 	@UiThread
 	fun show(message: Message, duration: Int) {
 		if (currentMessage == null) {
-			val messageDelay = 0
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				//messageDelay = 750;
-			}
-			showInternal(message, duration, messageDelay)
+			showInternal(message, duration, message.showMessageDelay())
 
 		} else {
 			// TODO: 03/01/2019 Решить, нужно ли разрешать дубликаты сообщений
@@ -59,38 +54,26 @@ internal class SimpleMessageManager private constructor() {
 		message.showSystemUi()
 	}
 
-	private fun showInternal(message: Message, duration: Int, messageDelay: Int) {
-		currentMessage = message!!
+	private fun showInternal(message: Message, duration: Int, messageDelay: Long) {
+		currentMessage = message
 		val currentMessageSafe = currentMessage!!
 		currentMessageSafe.hideSystemUi()
 
-		//		handler.postDelayed(() -> {
-		//			Callback callback = currentMessage.getCallback();
-		//			callback.show();
-		//			if (duration > 0) {
-		//				handler.removeCallbacksAndMessages(null);
-		//				handler.postDelayed(() -> {
-		//					//noinspection ConstantConditions
-		//					if (callback != null) {
-		//						callback.dismiss();
-		//						currentMessage.showSystemUi();
-		//						currentMessage = null;
-		//					}
-		//				}, duration);
-		//			}
-		//		}, messageDelay);
+		handler.removeCallbacksAndMessages(null)
+		handler.postDelayed({
+								currentMessageSafe.getCallback().apply {
+									show()
+									if (duration > 0) {
+										handler.removeCallbacksAndMessages(null)
+										handler.postDelayed({
+																dismiss()
+																currentMessageSafe.showSystemUi()
+																currentMessage = null
 
-		val callback = currentMessageSafe.getCallback()
-		callback.show()
-		if (duration > 0) {
-			handler.removeCallbacksAndMessages(null)
-			handler.postDelayed({
-									callback.dismiss()
-									currentMessageSafe.showSystemUi()
-									currentMessage = null
-
-								}, duration.toLong())
-		}
+															}, duration.toLong())
+									}
+								}
+							}, messageDelay)
 	}
 
 	fun destroy() {
@@ -110,8 +93,6 @@ internal class SimpleMessageManager private constructor() {
 		private const val TAG = "SimpleMessageManager"
 
 		@JvmStatic
-		val instance: SimpleMessageManager by lazy {
-			SimpleMessageManager()
-		}
+		val instance: SimpleMessageManager by lazy { SimpleMessageManager() }
 	}
 }

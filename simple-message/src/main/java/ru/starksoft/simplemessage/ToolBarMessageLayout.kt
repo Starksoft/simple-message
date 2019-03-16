@@ -104,4 +104,8 @@ internal class ToolBarMessageLayout(context: Context, messageData: MessageData) 
 			}
 		}
 	}
+
+	override fun showMessageDelay(): Long {
+		return 0
+	}
 }

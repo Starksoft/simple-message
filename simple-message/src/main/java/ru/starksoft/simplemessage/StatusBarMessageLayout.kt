@@ -74,4 +74,12 @@ internal class StatusBarMessageLayout(context: Context, messageData: MessageData
 			}
 		}
 	}
+
+	override fun showMessageDelay(): Long {
+		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			750L
+		} else {
+			0L
+		}
+	}
 }

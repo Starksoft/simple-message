@@ -32,15 +32,6 @@ public abstract class BaseMessageLayout extends FrameLayout implements Message {
 	@NonNull protected final MessageData messageData;
 	private final AccessibilityManager accessibilityManager;
 	private final MessageAnimationCallback messageAnimationCallback = createAnimationCallback();
-	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
-		public void show() {
-			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, BaseMessageLayout.this));
-		}
-
-		public void dismiss() {
-			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, BaseMessageLayout.this));
-		}
-	};
 	@Nullable private Message.OnDismissListener onDismissListener;
 	@Nullable private OnLayoutChangeListener onLayoutChangeListener;
 	private boolean isDismissing;
@@ -56,6 +47,15 @@ public abstract class BaseMessageLayout extends FrameLayout implements Message {
 				return false;
 		}
 	});
+	private final SimpleMessageManager.Callback managerCallback = new SimpleMessageManager.Callback() {
+		public void show() {
+			handler.sendMessage(handler.obtainMessage(EVENT_SHOW, BaseMessageLayout.this));
+		}
+
+		public void dismiss() {
+			handler.sendMessage(handler.obtainMessage(EVENT_HIDE, BaseMessageLayout.this));
+		}
+	};
 
 	public BaseMessageLayout(@NonNull Context context, @NonNull MessageData messageData) {
 		super(context);

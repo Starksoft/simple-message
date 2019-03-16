@@ -22,6 +22,8 @@ internal interface Message {
 
 	fun showSystemUi()
 
+	fun showMessageDelay(): Long
+
 	interface OnDismissListener {
 
 		fun onDismissed()

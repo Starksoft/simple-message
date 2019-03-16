@@ -10,9 +10,9 @@ android {
 		minSdkVersion buildConfig.minSdk
 		targetSdkVersion buildConfig.targetSdk
 
-		applicationId "com.simplemessage.example"
+		applicationId buildConfig.applicationPackage
 		versionCode 1
-		versionName "1.0"
+		versionName buildConfig.version
 		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 	}
 
