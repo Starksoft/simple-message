@@ -2,4 +2,4 @@
 
 compile 'ru.starksoft:simple-message:X.X.X'
 
-![Demo](/screenshots/demo.png?raw=true "Demo app")
+![Demo app](/screenshots/demo.png?raw=true "Demo app") ![Normal](/screenshots/normal.png?raw=true "Normal message") ![Progress](/screenshots/normal-with-progress.png?raw=true "Normal with progress") ![Toolbar progress](/screenshots/toolbar-with-progress.png?raw=true "Toolbar with progress") ![Toolbar persistent](/screenshots/toolbar-persistent.png?raw=true "Toolbar persistent")
